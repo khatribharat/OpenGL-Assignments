@@ -1,18 +1,12 @@
 #include "common.h"
 
 /* RGB Values for Voxels */
-#define R 	0.3f
-#define G	0.5f
-#define B	0.6f
-#define ALPHA   0.0f	/* Opacity : 0.0f => Opaque, 1.0f => Transparent */
+#define R 	0.3
+#define G	0.5
+#define B	0.6
+#define ALPHA   0.0	/* Opacity : 0.0f => Opaque, 1.0f => Transparent */
 
-/* Color and Light Effects for Voxels */
-//static GLfloat color[] = {R, G, B, ALPHA};
-//glMaterialf(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, *color);
-
-unsigned int rcount = 0;
-#define MIN_EDGE_LENGTH 0.5
-
+#define MIN_EDGE_LENGTH 0.1
 enum state {EMPTY,PARTIAL,FULL};
 
 /* Here the unit vector is specified with repect to the origin as the reference point */
@@ -68,15 +62,13 @@ struct octTree* giveOctant(struct octTree* root, char* tag)
 	(OT->domain).edge_len = e/2;
 	OT->S = PARTIAL;
 	
-	printf("Type is %s\n",tag);
-	
 	OT->f_BottomLeft = NULL;	OT->f_TopLeft = NULL; 
 	OT->f_TopRight = NULL;		OT->f_BottomRight = NULL; 
 	OT->b_BottomLeft = NULL;	OT->b_TopLeft = NULL;
 	OT->b_TopRight = NULL;		OT->b_BottomRight = NULL;
 	
 	if ( strcmp(tag,"FBL") == 0 )
-		{ printf("Edge Length = %f\n",e/4); (OT->domain).center = *(translate((root->domain).center,-e/4,-e/4,e/4)) ; }
+		  (OT->domain).center = *(translate((root->domain).center,-e/4,-e/4,e/4)) ; 
 	else 
 		if ( strcmp(tag,"FTL") == 0 )
 			(OT->domain).center = *(translate((root->domain).center,-e/4,e/4,e/4)) ;
@@ -119,13 +111,9 @@ struct octTree* init_octTree()
 
 void VSP_glOctTree(unsigned int (*equation)(struct point3D point), struct octTree* begin)
 {
- rcount++;
-//if ( rcount <= 1000 )
-//{
 /* Divide the cuboid recursively into 8 blocks */
 	if ( (begin->domain).edge_len <= MIN_EDGE_LENGTH )
 		{	
-			printf("LAST STEP\n");
 			// No need of touching the pointers here , as they will anyway not be looked at during the OctTree traversal. 
 			if ( equation((begin->domain).center) )
 				{ begin->S = FULL; 
@@ -196,6 +184,36 @@ void VSP_glOctTree(unsigned int (*equation)(struct point3D point), struct octTre
 				   )
 				begin->S = EMPTY;
 		}
- //}
 	return;
 }
+
+
+void octTreeTraversal(struct octTree* begin)
+{
+	if ( begin->S == PARTIAL )
+		// We need to go down further in order to render the object.
+		{
+			octTreeTraversal(begin->f_BottomLeft);
+			octTreeTraversal(begin->f_TopLeft);
+			octTreeTraversal(begin->f_TopRight);
+			octTreeTraversal(begin->f_BottomRight);
+			octTreeTraversal(begin->b_BottomLeft);
+			octTreeTraversal(begin->b_TopLeft);
+			octTreeTraversal(begin->b_TopRight);
+			octTreeTraversal(begin->b_BottomRight);
+		}
+	else if ( begin->S == FULL )
+		{
+			// We need to render this part of the object.
+			#ifdef OCT_TREE
+			GLfloat x = (begin->domain).center.x;  GLfloat y = (begin->domain).center.y;  GLfloat z = (begin->domain).center.z;
+			GLfloat e = (begin->domain).edge_len;
+			glTranslatef(x,y,z);
+			glutWireCube(e);
+			glTranslatef(-x,-y,-z);
+			#endif
+		}
+	// Else the component is EMPTY. So we leave this case.
+	return;
+}
+

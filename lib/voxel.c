@@ -1,6 +1,7 @@
 /* Program to create a wireframe cube and torus
  */
-#define VOXEL
+//#define VOXEL
+#define OCT_TREE
 #include <stdio.h>
 #include <math.h>
 #include "common.h"
@@ -13,6 +14,8 @@ GLdouble eyey = 3.0;
 GLdouble eyez = 3.0;
 
 
+char octTreeMade = 'N';
+
 struct octTree* objTree;
 
 static GLfloat lightpos[] =
@@ -20,13 +23,9 @@ static GLfloat lightpos[] =
 static GLfloat lightcol[] = {1.0,1.0,1,0};  
 
 /********************************** Global objects needed by the CREATED voxel library. ******************************************/
+//#################################  TEST MATHEMATICAL FUNCTIONS #################################################################//
+
 struct boundingBox start;
-
-
-unsigned int parabolaFunc(struct point3D pt)
-{
-
-
 
 unsigned int ellipseFunc(struct point3D pt)
 {
@@ -50,15 +49,6 @@ unsigned int sphereFunc(struct point3D pt)
 	if ( sqrt( (pt.x)*(pt.x) + (pt.y)*(pt.y) + (pt.z)*(pt.z) ) <= 2.5 )
 		return 1;
 	else
-		return 0;
-}
-
-unsigned int coneFunc(struct point3D pt)
-{
-	GLfloat r = sqrt((pt.x)*(pt.x) + (pt.z)*(pt.z));
-	if ( pt.y <= 2.5 && pt.y >= 0.0 && r <= 2.5 && (pt.y)/r == 1.0 )  // Cone Angle = 45 degree
-		return 1;
-	else 
 		return 0;
 }
 /**********************************************************************************************************************************/
@@ -121,7 +111,11 @@ void  DrawGLScene(void)
 
    /* void glutSolidCube(GLdouble size); is used. */
    
-   objTree = voxelSpacePartition(&ellipseFunc,start);
+   if ( octTreeMade == 'N' )
+   	{ objTree = voxelSpacePartition(&cylinderFunc,start);
+	  octTreeMade = 'Y';
+	}
+   octTreeTraversal(objTree);
 		
    glFlush();						// Flush the OpenGl Buffers to the window.
    glutSwapBuffers();
@@ -156,7 +150,9 @@ int main (int argc, char **argv)
    /* This function is called only once the OpenGL window is created. */
    InitGL (750, 750);
    
-   
+   /******************************* INITIALIZATION *****************************************************/
+   /* Keeping these outside a function i.e in global space results in errors. These initializations therfore need to be
+    * within the definiton of a function. */  
    start.center.x = 0.0;
 
    // start.center.y = 0.0;  /* For cylinder and sphere */
@@ -164,6 +160,11 @@ int main (int argc, char **argv)
    start.center.z = 0.0;
    start.edge_len = 5.0;
 
+   static GLfloat colorf[4] = {0.5, 0.8, 0.2, 1.0};
+   static GLfloat colorb[4] = {0.2, 0.5, 0.5, 1.0};
+   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE,colorf);
+   glMaterialfv(GL_BACK, GL_AMBIENT_AND_DIFFUSE,colorb);
+   /****************************************************************************************************/
 
    /* Set the display function */
    glutDisplayFunc (&DrawGLScene);
