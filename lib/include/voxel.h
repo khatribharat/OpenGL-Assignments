@@ -1,13 +1,8 @@
 #include "common.h"
 
-/* RGB Values for Voxels */
-#define R 	0.3
-#define G	0.5
-#define B	0.6
-#define ALPHA   0.0	/* Opacity : 0.0f => Opaque, 1.0f => Transparent */
-
-#define MIN_EDGE_LENGTH 0.1
+#define MIN_EDGE_LENGTH 0.5
 enum state {EMPTY,PARTIAL,FULL};
+
 
 /* Here the unit vector is specified with repect to the origin as the reference point */
 struct point3D
@@ -22,7 +17,7 @@ struct boundingBox
 {
 	struct point3D center;
 	GLfloat edge_len;
-};
+} start;			/* start is the CUBICAL DOMAIN provided by the user */
 
 struct octTree
 {
@@ -53,7 +48,6 @@ struct point3D* translate(struct point3D source,GLfloat x, GLfloat y, GLfloat z)
 
 	return dest;
 }
-
 
 struct octTree* giveOctant(struct octTree* root, char* tag)
 {
